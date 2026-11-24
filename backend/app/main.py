@@ -16,7 +16,10 @@ from app.routers import (
     graph,
     overview,
     evolution,
-    network
+    network,
+    echo_mirror,
+    self_reflection,
+    self_evolution,
 )
 
 # Initialize database schema
@@ -60,6 +63,10 @@ app.include_router(graph.router, prefix=settings.API_V1_STR)
 app.include_router(overview.router, prefix=settings.API_V1_STR)
 app.include_router(evolution.router, prefix=settings.API_V1_STR)
 app.include_router(network.router, prefix=settings.API_V1_STR)
+app.include_router(echo_mirror.router, prefix=settings.API_V1_STR)
+app.include_router(self_reflection.router, prefix=settings.API_V1_STR)
+app.include_router(self_evolution.router, prefix=settings.API_V1_STR)
+
 
 @app.get("/api/health")
 def health_check():

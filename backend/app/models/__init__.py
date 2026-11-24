@@ -23,6 +23,8 @@ from app.models.entities import (
     KnowledgeUpdate,
     KnowledgeVerification,
     ActivityLog,
+    SelfReflectionRecord,
+    SelfEvolutionProposal,
 )
 
 __all__ = [
@@ -50,4 +52,7 @@ __all__ = [
     "KnowledgeUpdate",
     "KnowledgeVerification",
     "ActivityLog",
+    "SelfReflectionRecord",
+    "SelfEvolutionProposal",
 ]
+

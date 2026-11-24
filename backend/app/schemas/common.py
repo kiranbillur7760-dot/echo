@@ -507,3 +507,96 @@ class PlatformOverview(BaseModel):
     todays_insight: Dict[str, str]
     active_research: List[Dict[str, str]]
     top_expertise_areas: List[Dict[str, Any]]
+
+# --- ECHO Mirror (Artificial Self-Understanding) Schemas ---
+class EchoMirrorModuleInfo(BaseModel):
+    name: str
+    category: str
+    version: str
+    status: str
+    endpoint: str
+    description: str
+    evidence_grounding: str
+
+class EchoMirrorCapability(BaseModel):
+    title: str
+    domain: str
+    evidence: str
+    status: str
+
+class EchoMirrorLimitation(BaseModel):
+    category: str
+    limitation: str
+    rationale: str
+    epistemic_boundary: str
+
+class EchoMirrorStateResponse(BaseModel):
+    identity: Dict[str, Any]
+    architecture: Dict[str, Any]
+    modules: List[EchoMirrorModuleInfo]
+    capabilities: List[EchoMirrorCapability]
+    limitations: List[EchoMirrorLimitation]
+    runtime_telemetry: Dict[str, Any]
+    missing_information: List[str]
+    history_and_evolution: List[Dict[str, Any]]
+
+class EchoMirrorQueryRequest(BaseModel):
+    query: str
+
+class EchoMirrorQueryResponse(BaseModel):
+    query: str
+    answer: str
+    epistemic_classification: str # DOCUMENTED SYSTEM FACT, OPERATIONAL TELEMETRY, STRUCTURAL ARCHITECTURE
+    grounded_facts: List[str]
+    system_evidence: List[Dict[str, Any]]
+    confidence_score: float
+
+# --- Self-Reflection Laboratory Schemas ---
+class SelfReflectionCreate(BaseModel):
+    user_request: str
+    echo_response: str
+    evidence_sources: Optional[List[str]] = []
+
+class SelfReflectionOut(BaseModel):
+    id: int
+    user_request: str
+    echo_response: str
+    evidence_sources: List[str]
+    accuracy_score: float
+    evidence_grounding_score: float
+    epistemic_honesty_score: float
+    latency_ms: int
+    identified_limitations: List[str]
+    uncertainty_level: str
+    suggested_improvements: Optional[str]
+    evaluation_criteria: Dict[str, Any]
+    test_status: str
+    created_at: datetime
+
+# --- Controlled Self-Evolution Schemas ---
+class SelfEvolutionProposalCreate(BaseModel):
+    title: str
+    subsystem: str
+    identified_weakness: str
+    evidence_rationale: str
+    proposed_change: str
+    baseline_benchmark: Optional[Dict[str, Any]] = {}
+    projected_benchmark: Optional[Dict[str, Any]] = {}
+    test_suite_description: Optional[str] = None
+
+class SelfEvolutionProposalOut(BaseModel):
+    id: int
+    title: str
+    subsystem: str
+    identified_weakness: str
+    evidence_rationale: str
+    proposed_change: str
+    baseline_benchmark: Dict[str, Any]
+    projected_benchmark: Dict[str, Any]
+    test_suite_description: Optional[str]
+    status: str
+    reviewed_by: Optional[str]
+    review_notes: Optional[str]
+    applied_at: Optional[datetime]
+    created_at: datetime
+
