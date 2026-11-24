@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #020713;
+  color: #F4F8FF;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(22, 123, 255, 0.12) 0%, transparent 60%),
+    radial-gradient(circle at 85% 30%, rgba(146, 92, 255, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 15% 70%, rgba(0, 217, 255, 0.06) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Custom Futuristic Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020713;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0C233D;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 217, 255, 0.4);
+}
+
+/* Glassmorphic Cyber Panels */
+.glass-panel {
+  background: rgba(7, 24, 43, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 217, 255, 0.14);
+  box-shadow: 0 8px 32px 0 rgba(0, 7, 25, 0.45);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(0, 217, 255, 0.4);
+  box-shadow: 0 0 25px -5px rgba(0, 217, 255, 0.25), 0 8px 32px 0 rgba(0, 7, 25, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Cyber Glow Buttons */
+.btn-cyber-primary {
+  background: linear-gradient(135deg, rgba(0, 217, 255, 0.9) 0%, rgba(22, 123, 255, 0.9) 100%);
+  color: #020713;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 20px rgba(0, 217, 255, 0.35);
+}
+
+.btn-cyber-primary:hover {
+  box-shadow: 0 0 30px rgba(0, 217, 255, 0.65);
+  transform: scale(1.02);
+}
+
+.btn-cyber-secondary {
+  background: rgba(7, 24, 43, 0.85);
+  color: #00D9FF;
+  border: 1px solid rgba(0, 217, 255, 0.35);
+  transition: all 0.25s ease;
+}
+
+.btn-cyber-secondary:hover {
+  background: rgba(0, 217, 255, 0.12);
+  border-color: #00D9FF;
+  box-shadow: 0 0 15px rgba(0, 217, 255, 0.25);
+}
+
+/* Subtle grid overlay */
+.bg-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 217, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 217, 255, 0.035) 1px, transparent 1px);
+}
+
+/* Hexagon accents */
+.clip-chamfer {
+  clip-path: polygon(
+    8px 0%, 
+    calc(100% - 8px) 0%, 
+    100% 8px, 
+    100% calc(100% - 8px), 
+    calc(100% - 8px) 100%, 
+    8px 100%, 
+    0% calc(100% - 8px), 
+    0% 8px
+  );
+}
