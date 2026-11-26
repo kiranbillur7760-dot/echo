@@ -26,6 +26,8 @@ from app.routers import (
     conversations,
     settings_router,
     voice_ws,
+    research,
+    developer_api,
 )
 
 # Initialize database schema
@@ -79,6 +81,8 @@ app.include_router(self_evolution.router, prefix=settings.API_V1_STR)
 app.include_router(council.router, prefix=settings.API_V1_STR)
 app.include_router(time_machine.router, prefix=settings.API_V1_STR)
 app.include_router(voice_ws.router)
+app.include_router(research.router)
+app.include_router(developer_api.router)
 
 
 @app.get("/api/health")

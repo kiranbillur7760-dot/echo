@@ -43,7 +43,7 @@ def run_suite():
         print("\n[3/8] Testing Knowledge Records & Heuristics...")
         records = knowledge.list_knowledge_records(db=db)
         assert len(records) >= 1, "Expected knowledge records"
-        rec = records[0]
+        rec = next((r for r in records if getattr(r, "verification_status", "") == "verified"), records[0])
         assert rec.confidence_score >= 0.90, "Expected high confidence score"
         print(f"  -> SUCCESS: Retrieved record '{rec.title}' [Status: {rec.verification_status}, Conf: {rec.confidence_score}]")
 

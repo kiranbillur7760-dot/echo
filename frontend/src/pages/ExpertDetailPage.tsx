@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { ExpertDetail, KnowledgeUnit, ExpertConsentInfo } from '../types';
-import { DigitalHumanAvatar } from '../components/DigitalHumanAvatar';
+import { VoiceConsultationPanel } from '../components/VoiceConsultationPanel';
 import { useVoiceConversation } from '../hooks/useVoiceConversation';
 import {
   ShieldCheck,
@@ -60,12 +60,17 @@ export const ExpertDetailPage: React.FC = () => {
     onQuery: async (spokenText) => {
       if (!expert) return { answer: 'Expert unavailable.' };
       const res = await api.askEcho(spokenText, [], expert.id, {
-        mode: 'complete_human_intelligence',
+        mode: 'human_expert',
         aiProvider: 'auto',
       });
-      const answer = res.narrative_answer || res.hybrid_recommendation || 'No verified information available.';
-      speakUtterance(answer);
-      return { answer };
+      const rawAnswer = res.narrative_answer || res.hybrid_recommendation || 'No verified information available.';
+      const cleanForSpeech = rawAnswer
+        .replace(/#{1,6}\s*/g, '')
+        .replace(/\*\*/g, '')
+        .replace(/[•>]/g, '')
+        .trim();
+      speakUtterance(cleanForSpeech);
+      return { answer: rawAnswer };
     },
     continuousMode: false,
   });
@@ -428,12 +433,12 @@ export const ExpertDetailPage: React.FC = () => {
             </div>
 
             <div className="flex justify-center py-2">
-              <DigitalHumanAvatar
+              <VoiceConsultationPanel
                 expertName={expert.name}
                 expertTitle={expert.title}
                 expertDomain={expert.domain}
+                isSyntheticDemo={expert.is_synthetic_demo}
                 status={voiceStatus}
-                viseme={viseme}
                 speechEnergy={speechEnergy}
                 subtitle={currentSubtitle || liveTranscript}
                 isMuted={isMuted}
@@ -450,7 +455,6 @@ export const ExpertDetailPage: React.FC = () => {
                 }}
                 onInterrupt={interruptAndListen}
                 onToggleMute={toggleMute}
-                compact={false}
               />
             </div>
 

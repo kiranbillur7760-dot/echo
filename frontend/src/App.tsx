@@ -22,6 +22,8 @@ import { CouncilOfExpertsPage } from './pages/CouncilOfExpertsPage';
 import { DecisionTimeMachinePage } from './pages/DecisionTimeMachinePage';
 import { CreateExpertStudioPage } from './pages/CreateExpertStudioPage';
 import { ConversationsPage } from './pages/ConversationsPage';
+import { ResearchDiscoveryPage } from './pages/ResearchDiscoveryPage';
+import { DeveloperApiPage } from './pages/DeveloperApiPage';
 
 export const App: React.FC = () => {
   return (
@@ -43,6 +45,8 @@ export const App: React.FC = () => {
           <Route path="learning" element={<LearningPlatformPage />} />
           <Route path="evolution" element={<KnowledgeEvolutionPage />} />
           <Route path="network" element={<EchoNetworkPage />} />
+          <Route path="research" element={<ResearchDiscoveryPage />} />
+          <Route path="developer" element={<DeveloperApiPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="mirror" element={<EchoMirrorPage />} />

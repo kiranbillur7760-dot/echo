@@ -644,4 +644,83 @@ class PlatformSetting(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+# ==============================================================================
+# ENGINE 1 & ENGINE 5: GLOBAL KNOWLEDGE INFRASTRUCTURE & AUTONOMOUS RESEARCH
+# ==============================================================================
+
+class GlobalKnowledgeItem(Base):
+    __tablename__ = "global_knowledge_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False, index=True)
+    category = Column(String(40), nullable=False, index=True)  # human, scientific, published, real_world, ai_generated
+    domain = Column(String(120), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    chunk_index = Column(Integer, default=0)
+    content_hash = Column(String(64), nullable=False, index=True)  # SHA-256 for deduplication & incremental ingestion
+    embedding_json = Column(Text, default="{}")  # Normalized sparse/TF-IDF vector for fast semantic retrieval
+    # Provenance & Licensing
+    source_name = Column(String(255), nullable=False)
+    author_or_contributor = Column(String(255), nullable=True)
+    publication_date = Column(String(60), nullable=True)
+    source_location = Column(String(512), nullable=True)
+    license = Column(String(120), default="CC-BY-4.0 / Authorized")
+    access_permission = Column(String(50), default="public_platform")  # public_platform, restricted, internal_only
+    verification_status = Column(String(50), default="unverified")  # verified, unverified, ai_generated_unverified
+    confidence_score = Column(Float, default=0.85)
+    limitations = Column(Text, nullable=True)
+    processing_history = Column(Text, default="[]")  # JSON list of ingestion/verification events
+    expert_id = Column(Integer, ForeignKey("experts.id"), nullable=True)
+    ingested_at = Column(DateTime, default=datetime.utcnow)
+
+
+class IngestionJob(Base):
+    __tablename__ = "ingestion_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    source_type = Column(String(50), nullable=False)  # pdf, docx, txt, csv, json, audio, video, text, api
+    source_name = Column(String(255), nullable=False)
+    category = Column(String(40), default="scientific")
+    status = Column(String(40), default="queued", index=True)  # queued, processing, completed, skipped_duplicate, failed
+    total_chunks = Column(Integer, default=0)
+    new_chunks_added = Column(Integer, default=0)
+    duplicates_skipped = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+
+class ResearchHypothesis(Base):
+    __tablename__ = "research_hypotheses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    research_question = Column(Text, nullable=False)
+    domain = Column(String(120), nullable=False, index=True)
+    knowledge_gaps = Column(Text, default="[]")  # JSON list of gaps
+    cross_domain_links = Column(Text, default="[]")  # JSON list of cross-domain connections
+    conflicting_findings = Column(Text, default="[]")  # JSON list of conflicts
+    hypothesis_statement = Column(Text, nullable=False)
+    proposed_experiments = Column(Text, default="[]")  # JSON list of experiment designs & evaluation criteria
+    required_validation_evidence = Column(Text, nullable=False)
+    limitations_and_risks = Column(Text, nullable=False)
+    status = Column(String(40), default="proposed", index=True)  # proposed, testing, validated, refuted
+    experiment_results = Column(Text, nullable=True)
+    ai_provider_used = Column(String(80), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    validated_at = Column(DateTime, nullable=True)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    actor = Column(String(120), default="system")
+    action = Column(String(100), nullable=False, index=True)
+    resource_type = Column(String(80), nullable=False)
+    resource_id = Column(String(80), nullable=True)
+    details = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+
 

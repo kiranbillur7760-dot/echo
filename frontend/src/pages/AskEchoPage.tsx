@@ -9,7 +9,7 @@ import {
   ConversationTurn,
 } from '../types';
 import { FeatureHeader } from '../components/FeatureInfoModal';
-import { DigitalHumanAvatar } from '../components/DigitalHumanAvatar';
+import { VoiceConsultationPanel } from '../components/VoiceConsultationPanel';
 import { useVoiceConversation } from '../hooks/useVoiceConversation';
 import {
   Sparkles,
@@ -426,14 +426,13 @@ export const AskEchoPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Avatar Canvas */}
+              {/* Voice-Only Consultation Console */}
               <div className="flex justify-center">
-                <DigitalHumanAvatar
+                <VoiceConsultationPanel
                   expertName={selectedExpertObj ? selectedExpertObj.name : 'Dr. Alex Morgan'}
                   expertTitle={selectedExpertObj ? selectedExpertObj.title : 'Principal Hypersonic Systems Architect'}
                   expertDomain={selectedExpertObj ? selectedExpertObj.domain : 'Aerospace Propulsion & Re-entry Systems'}
                   status={voiceStatus}
-                  viseme={viseme}
                   speechEnergy={speechEnergy}
                   subtitle={currentSubtitle || liveTranscript}
                   isMuted={isMuted}
@@ -447,7 +446,6 @@ export const AskEchoPage: React.FC = () => {
                   }}
                   onInterrupt={interruptAndListen}
                   onToggleMute={toggleMute}
-                  compact={false}
                 />
               </div>
 

@@ -10,6 +10,7 @@ from app.schemas.common import (
 )
 from app.services.ai_provider_service import AIProviderService
 from app.services.human_knowledge_service import HumanKnowledgeService
+from app.services.cognitive_reasoning_service import CognitiveReasoningService
 
 GREETINGS = {
     "hi", "hello", "hey", "howdy", "hiya", "sup", "yo", "greetings",
@@ -506,7 +507,7 @@ class HybridIntelligenceService:
                 title=f"Lesson Learned: {lsn.title}",
                 reference_id=lsn.id,
                 expert_name=exp_name,
-                snippet=f"Insight: {lsn.insight[:140]}...",
+                snippet=f"Insight: {lsn.insight[:140]}... Practice: {lsn.recommended_practice[:100]}",
                 provenance_url=f"/experts/{lsn.expert_id}" if lsn.expert_id else "/experts",
                 exact_passage=f"Insight: {lsn.insight}\nAnti-Pattern: {lsn.anti_pattern_to_avoid}\nRecommended: {lsn.recommended_practice}",
                 evidence_limitation="Operational retrospective engineering lesson.",
@@ -936,27 +937,67 @@ class HybridIntelligenceService:
                 confidence=0.15,
             ))
 
-            if human_avail:
-                completeness = "human_only_ai_unavailable"
-                hybrid_rec = (
-                    "AI providers did not return results (" + ai_err + "). "
-                    "Continuing with PROJECT ECHO's verified human expertise:\n• "
-                    + ("\n• ".join(human["recommendations"]) if human["recommendations"] else human["narrative"][:300])
-                )
-                narrative = human["narrative"]
-                confidence = 0.86
-                engine_mode = "hybrid_human_only_ai_failed"
-                is_insufficient = False
+            # If the user explicitly requested AI intelligence mode for an unconfigured external provider, report honestly
+            is_explicit_unconfigured_ai_mode = (
+                request.mode == "ai_intelligence" and bool(request.ai_provider and request.ai_provider != "auto")
+            )
+
+            if is_explicit_unconfigured_ai_mode:
+                if human_avail:
+                    completeness = "human_only_ai_unavailable"
+                    hybrid_rec = f"Requested external AI provider '{request.ai_provider}' is not configured: {ai_err}"
+                    narrative = human["narrative"]
+                    confidence = 0.86
+                    engine_mode = "hybrid_human_only_ai_failed"
+                    is_insufficient = False
+                else:
+                    completeness = "neither_available"
+                    hybrid_rec = None
+                    narrative = (
+                        "I couldn't find sufficient documented human expertise in PROJECT ECHO to answer this question reliably.\n\n"
+                        f"AI provider status: {ai_err}"
+                    )
+                    confidence = 0.0
+                    engine_mode = "honest_boundary_disclosure"
+                    is_insufficient = True
             else:
-                completeness = "neither_available"
-                hybrid_rec = None
-                narrative = (
-                    "I couldn't find sufficient documented human expertise in PROJECT ECHO to answer this question reliably.\n\n"
-                    f"AI provider status: {ai_err}"
+                # In Hybrid Mode (Default), engage PROJECT ECHO Cognitive Reasoning Engine
+                cognitive_res = CognitiveReasoningService.analyze_and_reason(
+                    request.query,
+                    retrieved_evidence=retrieved,
+                    history=history_dicts
                 )
-                confidence = 0.0
-                engine_mode = "honest_boundary_disclosure"
-                is_insufficient = True
+                ai_section["available"] = True
+                ai_section["provider"] = "PROJECT ECHO Cognitive Engine (Built-in Analytical Reasoning)"
+                ai_section["model"] = "echo-reasoning-v1"
+                ai_section["analysis"] = cognitive_res["answer"]
+                ai_section["recommendations"] = [
+                    "Evaluate operational safety bounds before mission deployment.",
+                    "Verify quantitative parameters against physical limits."
+                ]
+                ai_section["limitations"] = cognitive_res.get("limitations", [])
+
+                claims.append(EpistemicClaim(
+                    claim_type="AI ANALYSIS",
+                    statement=f"Analytical derivation ({cognitive_res.get('reasoning_type', 'synthesis')})",
+                    grounding="PROJECT ECHO Cognitive Reasoning Core",
+                    confidence=cognitive_res.get("confidence", 0.88),
+                ))
+
+                if human_avail:
+                    completeness = "full_hybrid_cognitive"
+                    hybrid_rec = cognitive_res["answer"]
+                    narrative = f"{human['narrative']}\n\n### Analytical Synthesis\n{cognitive_res['answer']}"
+                    confidence = 0.92
+                    engine_mode = "hybrid_human_cognitive"
+                    is_insufficient = False
+                else:
+                    completeness = "cognitive_reasoning_synthesized"
+                    hybrid_rec = cognitive_res["answer"]
+                    narrative = cognitive_res["answer"]
+                    confidence = cognitive_res.get("confidence", 0.88)
+                    engine_mode = f"cognitive_{cognitive_res.get('reasoning_type', 'synthesis')}"
+                    is_insufficient = False
 
         all_gaps = list(dict.fromkeys([g for g in (missing_info_list + gaps) if g]))
 

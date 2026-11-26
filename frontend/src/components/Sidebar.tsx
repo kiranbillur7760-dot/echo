@@ -12,6 +12,7 @@ import {
   Clock,
   Compass,
   GitBranch,
+  Terminal,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -28,11 +29,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
   const primaryNavigation = [
     { name: 'Home', to: '/', icon: Home },
-    { name: 'Discover Experts', to: '/experts', icon: Users },
-    { name: 'Create Expert Intelligence', to: '/create-expert', icon: Sparkles },
     { name: 'Ask ECHO', to: '/ask-echo', icon: MessageSquare },
+    { name: 'Discover Experts', to: '/experts', icon: Users },
+    { name: 'Human Intelligence', to: '/create-expert', icon: Sparkles },
     { name: 'Knowledge Network', to: '/network', icon: Network },
+    { name: 'Research and Discovery', to: '/research', icon: Compass },
     { name: 'Conversations', to: '/conversations', icon: MessagesSquare },
+    { name: 'Developer API', to: '/developer', icon: Terminal },
     { name: 'Settings', to: '/settings', icon: Settings },
   ];
 

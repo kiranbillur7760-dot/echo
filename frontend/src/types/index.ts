@@ -851,3 +851,55 @@ export interface TimeMachineSimulationResult {
   comparison_table: TimeMachineComparisonItem[];
   causal_chain: string[];
 }
+
+export interface ResearchHypothesis {
+  id: string;
+  research_question: string;
+  primary_domains: string[];
+  knowledge_gaps: string[];
+  cross_domain_links: Array<{
+    source_domain: string;
+    target_domain: string;
+    concept: string;
+    analogical_link: string;
+    confidence: number;
+  }>;
+  conflicting_findings: Array<{
+    topic: string;
+    perspective_a: string;
+    perspective_b: string;
+    potential_resolution: string;
+  }>;
+  hypothesis_statement: string;
+  mechanism_of_action: string;
+  proposed_experiments: Array<{
+    experiment_id: string;
+    title: string;
+    methodology: string;
+    key_metrics: string[];
+    risk_factors: string[];
+  }>;
+  required_validation_evidence: string[];
+  status: 'proposed' | 'testing' | 'validated' | 'refuted';
+  confidence_score: number;
+  generated_by_engine: string;
+  promoted_to_knowledge_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GlobalKnowledgeItem {
+  id: string;
+  category: 'human' | 'scientific' | 'published' | 'real_world' | 'ai_generated';
+  title: string;
+  content_text: string;
+  source_name: string;
+  author_or_contributor?: string;
+  publication_date?: string;
+  license?: string;
+  access_permission?: string;
+  verification_status: string;
+  confidence_score: number;
+  created_at: string;
+}
+

@@ -1364,4 +1364,78 @@ export const api = {
     if (!res.ok) throw new Error('Failed to save settings');
     return res.json();
   },
+
+  // ── Engine 1: Global Knowledge Engine ─────────────────────────────────────
+  searchGlobalKnowledge: async (query: string, category?: string, limit: number = 10): Promise<{ total: number; results: any[] }> => {
+    return safeFetch<{ total: number; results: any[] }>(`${API_BASE}/v1/knowledge/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, category, limit }),
+    }, { total: 0, results: [] });
+  },
+
+  ingestGlobalKnowledge: async (payload: {
+    source_name: string;
+    category: string;
+    content_payload: string;
+    author_or_contributor?: string;
+    license?: string;
+  }): Promise<any> => {
+    const res = await fetch(`${API_BASE}/v1/knowledge/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to ingest knowledge');
+    return res.json();
+  },
+
+  // ── Engine 5: Autonomous Research & Discovery ─────────────────────────────
+  discoverResearch: async (research_question: string, target_domains?: string[], use_ai_synthesis: boolean = true): Promise<any> => {
+    const res = await fetch(`${API_BASE}/research/discover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ research_question, target_domains, use_ai_synthesis }),
+    });
+    if (!res.ok) throw new Error('Failed to run autonomous research discovery');
+    return res.json();
+  },
+
+  getResearchHypotheses: async (status?: string): Promise<{ total: number; hypotheses: any[] }> => {
+    const url = status ? `${API_BASE}/research/hypotheses?status=${encodeURIComponent(status)}` : `${API_BASE}/research/hypotheses`;
+    return safeFetch<{ total: number; hypotheses: any[] }>(url, undefined, { total: 0, hypotheses: [] });
+  },
+
+  validateHypothesis: async (hypothesis_id: string, new_status: string, validation_evidence: string, confidence_delta: number = 0.1): Promise<any> => {
+    const res = await fetch(`${API_BASE}/research/hypotheses/${hypothesis_id}/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ new_status, validation_evidence, confidence_delta }),
+    });
+    if (!res.ok) throw new Error('Failed to update hypothesis validation status');
+    return res.json();
+  },
+
+  // ── Product A: Versioned Developer API v1 ─────────────────────────────────
+  getV1Health: async (): Promise<any> => {
+    return safeFetch<any>(`${API_BASE}/v1/health`, undefined, { status: 'healthy', api_version: 'v1.0.0-rc1' });
+  },
+
+  getV1Models: async (apiKey?: string): Promise<any> => {
+    const headers: Record<string, string> = {};
+    if (apiKey) headers['x-api-key'] = apiKey;
+    return safeFetch<any>(`${API_BASE}/v1/models`, { headers }, { active_ai_providers: [], supported_engines: {} });
+  },
+
+  queryV1Intelligence: async (query: string, mode: string = 'hybrid_intelligence', expert_id?: string, apiKey?: string): Promise<any> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['x-api-key'] = apiKey;
+    const res = await fetch(`${API_BASE}/v1/intelligence/query`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ query, mode, expert_id }),
+    });
+    if (!res.ok) throw new Error('API v1 query failed');
+    return res.json();
+  },
 };

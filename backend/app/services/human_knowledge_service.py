@@ -16,7 +16,7 @@ STOP_WORDS = {
     "from", "into", "can", "its", "our", "their", "his", "her", "she", "him",
     "they", "them", "you", "your", "would", "could", "should", "been",
     "will", "does", "about", "over", "also", "than", "then", "some",
-    "any", "all", "but", "out", "one", "two", "use", "get", "per", "via",
+    "any", "all", "but", "out", "one", "two", "use", "used", "using", "uses", "get", "per", "via",
     "improve", "make", "best", "ways", "explain", "tell", "compare", "between",
     "system", "systems", "human", "learn", "train", "design", "build", "topic",
     "stored", "causes", "differences", "modern", "short", "write", "work",
@@ -99,9 +99,14 @@ class HumanKnowledgeService:
         if is_follow_up:
             combined_prev = f"{last_q} {last_a} {last_exp}"
             if experts:
+                TITLE_PREFIXES = {"dr", "prof", "director", "chief", "mr", "ms", "mrs"}
                 for exp in experts:
-                    parts = [p.lower() for p in exp.name.split() if len(p) > 2]
-                    if any(p in combined_prev for p in parts):
+                    parts = [
+                        p.strip(".,").lower()
+                        for p in exp.name.split()
+                        if len(p.strip(".,")) > 2 and p.strip(".,").lower() not in TITLE_PREFIXES
+                    ]
+                    if any(re.search(rf"\b{re.escape(p)}\b", combined_prev) for p in parts):
                         active_expert = exp.name
                         context_tokens.extend(parts)
                         context_tokens.extend(_tokenize(exp.domain)[:4])
@@ -202,7 +207,7 @@ class HumanKnowledgeService:
         for ku in knowledge_units:
             if not _expert_allowed(ku.expert_id):
                 continue
-            if ku.verification_status == "rejected" or ku.access_permissions == "suspended":
+            if ku.verification_status in ("rejected", "ai_extracted") or ku.access_permissions == "suspended":
                 continue
             if verification_filter == "approved_only" and ku.verification_status != "approved_by_expert":
                 continue
@@ -225,19 +230,25 @@ class HumanKnowledgeService:
                     f"{d.title} {d.problem_definition} {d.context} {d.selected_decision} {d.reasoning} {d.outcome} {d.lessons_learned}",
                 ))
         for r in records:
-            if _expert_allowed(r.expert_id) and r.verification_status != "rejected":
+            if _expert_allowed(r.expert_id) and r.verification_status not in ("rejected", "draft"):
                 corpus_docs.append((
                     "record",
                     r.id,
                     f"{r.title} {r.category} {r.content} {r.key_takeaways or ''}",
                 ))
         for doc in documents:
-            if _expert_allowed(doc.expert_id):
-                corpus_docs.append((
-                    "document",
-                    doc.id,
-                    f"{doc.title} {doc.extracted_text or ''}",
-                ))
+            if not _expert_allowed(doc.expert_id):
+                continue
+            if not doc.is_synthetic_demo and not any(
+                ku.source_reference and (doc.filename in ku.source_reference or doc.title in ku.source_reference) and ku.verification_status == "approved_by_expert"
+                for ku in knowledge_units
+            ):
+                continue
+            corpus_docs.append((
+                "document",
+                doc.id,
+                f"{doc.title} {doc.extracted_text or ''}",
+            ))
         for exp_item in experiences:
             if _expert_allowed(exp_item.expert_id):
                 corpus_docs.append((
@@ -294,14 +305,28 @@ class HumanKnowledgeService:
             is_approved: bool = False,
         ) -> float:
             text_word_set = set(_tokenize(text_lower))
-            lex_base = sum(1.8 for t in base_tokens if (t in text_word_set or (len(t) >= 5 and t in text_lower)))
-            lex_syn = sum(0.8 for t in expanded_tokens if t not in base_tokens and (t in text_word_set or (len(t) >= 5 and t in text_lower)))
+            matched_base = [t for t in base_tokens if (t in text_word_set or (len(t) >= 5 and t in text_lower))]
+            matched_syn = [t for t in expanded_tokens if t not in base_tokens and (t in text_word_set or (len(t) >= 5 and t in text_lower))]
+            match_count = len(matched_base) + len(matched_syn)
+            lex_base = sum(1.8 for _ in matched_base)
+            lex_syn = sum(0.8 for _ in matched_syn)
             sem = _tfidf_sim(kind, oid) * 8.0 if (kind and oid) else 0.0
             exp_bonus = 10.0 if (bonus_expert_name and bonus_expert_name == expert_name) else 0.0
-            approval_bonus = 1.2 if is_approved else 0.0
+
+            # Substantive match requires >= 2 terms for multi-term queries, or named expert bonus, or high semantic resonance
+            has_substantive_match = (
+                (match_count >= 2)
+                or (match_count >= 1 and len(base_tokens) <= 1)
+                or (exp_bonus > 0.0)
+                or (sem >= 2.5)
+            )
+            approval_bonus = 1.2 if (is_approved and has_substantive_match) else 0.0
+
             total = lex_base + lex_syn + sem
-            if total > 0:
+            if total > 0 and has_substantive_match:
                 total += exp_bonus + approval_bonus
+            elif total > 0 and not has_substantive_match:
+                total = min(total, 2.2)
             return total
 
         matched_experts: List[Tuple[Expert, float]] = []
@@ -345,6 +370,11 @@ class HumanKnowledgeService:
 
         for doc in documents:
             if not _expert_allowed(doc.expert_id):
+                continue
+            if not doc.is_synthetic_demo and not any(
+                ku.source_reference and (doc.filename in ku.source_reference or doc.title in ku.source_reference) and ku.verification_status == "approved_by_expert"
+                for ku in knowledge_units
+            ):
                 continue
             txt = f"{doc.title} {doc.extracted_text or ''}".lower()
             ename = doc.expert.name if doc.expert else ""
@@ -401,6 +431,13 @@ class HumanKnowledgeService:
                 matched_alts.append((alt, s))
 
         for ev in evidence_list:
+            ev_expert_id = None
+            if ev.decision:
+                ev_expert_id = ev.decision.expert_id
+            elif ev.knowledge_record:
+                ev_expert_id = ev.knowledge_record.expert_id
+            if ev_expert_id is not None and not _expert_allowed(ev_expert_id):
+                continue
             txt = f"{ev.title} {ev.content}".lower()
             s = _score_entity(txt)
             if s > 0:
@@ -414,6 +451,25 @@ class HumanKnowledgeService:
             s = _score_entity(txt, "lesson", lsn.id, ename)
             if s > 0:
                 matched_lessons.append((lsn, s))
+
+        # If talking directly to a selected expert and asking about their background/projects/decisions
+        SELF_INTRO_TRIGGERS = (
+            "work on", "yourself", "your project", "your background", "your experience",
+            "your decision", "your expertise", "who are you", "what do you do", "tell me about you"
+        )
+        if expert_id_filter and any(t in query_lower for t in SELF_INTRO_TRIGGERS):
+            if not matched_experts:
+                matched_experts = [(e, 10.0) for e in experts if e.id == expert_id_filter and _expert_allowed(e.id)]
+            if not matched_decisions:
+                matched_decisions = [(d, 8.0) for d in decisions if d.expert_id == expert_id_filter and _expert_allowed(d.expert_id)]
+            if not matched_records:
+                matched_records = [(r, 6.0) for r in records if r.expert_id == expert_id_filter and _expert_allowed(r.expert_id)]
+            if not matched_docs:
+                matched_docs = [
+                    (doc, 6.0, (doc.extracted_text or "")[:220])
+                    for doc in documents
+                    if doc.expert_id == expert_id_filter and _expert_allowed(doc.expert_id)
+                ]
 
         for lst in (
             matched_experts, matched_units, matched_docs, matched_experiences,
