@@ -25,6 +25,16 @@ from app.models.entities import (
     ActivityLog,
     SelfReflectionRecord,
     SelfEvolutionProposal,
+    ExpertConsent,
+    SourceMedia,
+    KnowledgeUnit,
+    VerificationHistory,
+    ExpertRelationship,
+    Conversation,
+    Message,
+    AIModelRun,
+    EvidenceLink,
+    PlatformSetting,
 )
 
 __all__ = [
@@ -54,5 +64,14 @@ __all__ = [
     "ActivityLog",
     "SelfReflectionRecord",
     "SelfEvolutionProposal",
+    "ExpertConsent",
+    "SourceMedia",
+    "KnowledgeUnit",
+    "VerificationHistory",
+    "ExpertRelationship",
+    "Conversation",
+    "Message",
+    "AIModelRun",
+    "EvidenceLink",
+    "PlatformSetting",
 ]
-

@@ -15,10 +15,12 @@ def seed_database(db: Session):
     """
     # Check if already seeded
     from app.services.seed_additional_experts import seed_additional_experts
+    from app.services.seed_living_extensions import seed_living_extensions
 
     existing_expert = db.query(Expert).filter(Expert.name == "Dr. Alex Morgan").first()
     if existing_expert:
         seed_additional_experts(db)
+        seed_living_extensions(db)
         return
 
     # 1. Base Users
@@ -582,4 +584,6 @@ def seed_database(db: Session):
     db.add_all(logs)
 
     db.commit()
+    seed_additional_experts(db)
+    seed_living_extensions(db)
     print("Database successfully seeded with Dr. Alex Morgan synthetic demonstration scenario!")

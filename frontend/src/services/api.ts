@@ -3,10 +3,14 @@
   Expert,
   ExpertDetail,
   KnowledgeRecord,
+  KnowledgeUnit,
+  ExpertConsentInfo,
+  ConversationSummary,
   DecisionDNA,
   DecisionReplayResult,
   SimulationResult,
   AskEchoResult,
+  AskEchoMode,
   CaseStudy,
   StudentSubmission,
   SkillProfile,
@@ -533,16 +537,20 @@ export const api = {
     });
   },
 
-  // Ask ECHO
+  // Ask ECHO (Two Modes: complete_human_intelligence | hybrid_intelligence)
   askEcho: async (
     query: string,
     conversationHistory?: Array<{ query: string; answer: string; expert_name?: string }>,
     expertId?: number,
     options?: {
-      mode?: 'human_expert' | 'ai_intelligence' | 'hybrid_intelligence';
+      mode?: AskEchoMode | string;
       aiProvider?: string;
+      aiProviders?: string[];
       aiModel?: string;
       focusDomain?: string;
+      conversationId?: number | null;
+      isVoice?: boolean;
+      verificationFilter?: string;
     }
   ): Promise<AskEchoResult> => {
     const trimmed = query.trim().toLowerCase();
@@ -555,8 +563,8 @@ export const api = {
           mode_used: mode,
           structured_claims: [],
           narrative_answer:
-            "Hello! I am **Ask ECHO**, a Human–AI Hybrid Intelligence system.\n\n" +
-            "Select **HYBRID INTELLIGENCE**, **HUMAN EXPERT**, or **AI INTELLIGENCE** above and ask any question.",
+            "Hello! I am **PROJECT ECHO** — Living Human Intelligence.\n\n" +
+            "Select **HYBRID INTELLIGENCE** or **COMPLETE HUMAN INTELLIGENCE** and ask any question.",
           is_insufficient_evidence: false,
           is_general_knowledge: false,
           documented_facts: [],
@@ -600,8 +608,12 @@ export const api = {
         query,
         mode,
         ai_provider: options?.aiProvider || 'auto',
+        ai_providers: options?.aiProviders || undefined,
         ai_model: options?.aiModel || undefined,
         focus_domain: options?.focusDomain || undefined,
+        verification_filter: options?.verificationFilter || undefined,
+        conversation_id: options?.conversationId || undefined,
+        is_voice: Boolean(options?.isVoice),
         conversation_history: conversationHistory || [],
         expert_id: expertId
       }),
@@ -1188,5 +1200,168 @@ export const api = {
         })
       }
     );
+  },
+
+  // ── Expert Intelligence Creation Studio ────────────────────────────────────
+  getKnowledgeUnits: async (params?: {
+    expert_id?: number;
+    category?: string;
+    topic?: string;
+    verification_status?: string;
+    search?: string;
+  }): Promise<KnowledgeUnit[]> => {
+    const q = new URLSearchParams();
+    if (params?.expert_id) q.set('expert_id', String(params.expert_id));
+    if (params?.category && params.category !== 'all') q.set('category', params.category);
+    if (params?.topic && params.topic !== 'all') q.set('topic', params.topic);
+    if (params?.verification_status && params.verification_status !== 'all') q.set('verification_status', params.verification_status);
+    if (params?.search) q.set('search', params.search);
+    return safeFetch<KnowledgeUnit[]>(`${API_BASE}/studio/knowledge-units?${q.toString()}`, undefined, []);
+  },
+
+  createKnowledgeUnit: async (payload: Partial<KnowledgeUnit> & { expert_id: number; title: string; description: string }): Promise<KnowledgeUnit> => {
+    const res = await fetch(`${API_BASE}/studio/knowledge-units`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  updateKnowledgeUnit: async (unitId: number, payload: Partial<KnowledgeUnit> & { reviewer_name?: string; review_notes?: string }): Promise<KnowledgeUnit> => {
+    const res = await fetch(`${API_BASE}/studio/knowledge-units/${unitId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  verifyKnowledgeUnit: async (unitId: number, verificationStatus: string, reviewerName: string, notes?: string): Promise<KnowledgeUnit> => {
+    const res = await fetch(`${API_BASE}/studio/knowledge-units/${unitId}/verify`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verification_status: verificationStatus, reviewer_name: reviewerName, notes }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  getUnitHistory: async (unitId: number): Promise<any[]> => {
+    return safeFetch<any[]>(`${API_BASE}/studio/knowledge-units/${unitId}/history`, undefined, []);
+  },
+
+  getSourceMedia: async (expertId?: number): Promise<any[]> => {
+    const q = expertId ? `?expert_id=${expertId}` : '';
+    return safeFetch<any[]>(`${API_BASE}/studio/media${q}`, undefined, []);
+  },
+
+  captureMedia: async (formData: FormData): Promise<any> => {
+    const res = await fetch(`${API_BASE}/studio/capture/media`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  interviewStep: async (expertId: number, topic: string, qaTurns: Array<{ question: string; answer: string }>): Promise<any> => {
+    const res = await fetch(`${API_BASE}/studio/capture/interview/step`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expert_id: expertId, topic, qa_turns: qaTurns }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  interviewFinalize: async (expertId: number, topic: string, qaTurns: Array<{ question: string; answer: string }>): Promise<any> => {
+    const res = await fetch(`${API_BASE}/studio/capture/interview/finalize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ expert_id: expertId, topic, qa_turns: qaTurns }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  captureDemonstration: async (payload: {
+    expert_id: number;
+    title: string;
+    topic: string;
+    scenario: string;
+    steps_walkthrough: string;
+    tools_and_parameters?: string;
+    common_mistakes_and_lessons?: string;
+    timestamp_notes?: string;
+  }): Promise<any> => {
+    const res = await fetch(`${API_BASE}/studio/capture/demonstration`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  getExpertConsent: async (expertId: number): Promise<ExpertConsentInfo> => {
+    const res = await fetch(`${API_BASE}/studio/experts/${expertId}/consent`);
+    if (!res.ok) throw new Error('Failed to load consent status');
+    return res.json();
+  },
+
+  updateExpertConsent: async (expertId: number, payload: Partial<ExpertConsentInfo>): Promise<ExpertConsentInfo> => {
+    const res = await fetch(`${API_BASE}/studio/experts/${expertId}/consent`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to update consent');
+    return res.json();
+  },
+
+  // ── Connected Human Intelligence ──────────────────────────────────────────
+  crossExpertQuery: async (query: string, expertIds?: number[]): Promise<any> => {
+    const res = await fetch(`${API_BASE}/network/cross-expert-query`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, expert_ids: expertIds }),
+    });
+    if (!res.ok) throw new Error('Failed to run cross-expert query');
+    return res.json();
+  },
+
+  // ── Persistent Conversations ──────────────────────────────────────────────
+  listConversations: async (): Promise<ConversationSummary[]> => {
+    return safeFetch<ConversationSummary[]>(`${API_BASE}/conversations`, undefined, []);
+  },
+
+  getConversation: async (id: number): Promise<any> => {
+    const res = await fetch(`${API_BASE}/conversations/${id}`);
+    if (!res.ok) throw new Error('Conversation not found');
+    return res.json();
+  },
+
+  deleteConversation: async (id: number): Promise<any> => {
+    const res = await fetch(`${API_BASE}/conversations/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete conversation');
+    return res.json();
+  },
+
+  // ── Persistent Settings ───────────────────────────────────────────────────
+  getSettings: async (): Promise<any> => {
+    return safeFetch<any>(`${API_BASE}/settings`, undefined, { settings: {}, database_engine: 'sqlite', providers: [] });
+  },
+
+  updateSettings: async (settingsObj: Record<string, any>): Promise<any> => {
+    const res = await fetch(`${API_BASE}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: settingsObj }),
+    });
+    if (!res.ok) throw new Error('Failed to save settings');
+    return res.json();
   },
 };

@@ -20,6 +20,8 @@ import { SelfEvolutionPage } from './pages/SelfEvolutionPage';
 import { ExistenceLaboratoryPage } from './pages/ExistenceLaboratoryPage';
 import { CouncilOfExpertsPage } from './pages/CouncilOfExpertsPage';
 import { DecisionTimeMachinePage } from './pages/DecisionTimeMachinePage';
+import { CreateExpertStudioPage } from './pages/CreateExpertStudioPage';
+import { ConversationsPage } from './pages/ConversationsPage';
 
 export const App: React.FC = () => {
   return (
@@ -29,6 +31,7 @@ export const App: React.FC = () => {
           <Route index element={<OverviewPage />} />
           <Route path="experts" element={<ExpertsPage />} />
           <Route path="experts/:id" element={<ExpertDetailPage />} />
+          <Route path="create-expert" element={<CreateExpertStudioPage />} />
           <Route path="knowledge" element={<KnowledgePage />} />
           <Route path="decisions" element={<DecisionIntelligencePage />} />
           <Route path="council" element={<CouncilOfExpertsPage />} />
@@ -36,6 +39,7 @@ export const App: React.FC = () => {
           <Route path="graph" element={<KnowledgeGraphPage />} />
           <Route path="simulation" element={<ExperienceSimulationPage />} />
           <Route path="ask-echo" element={<AskEchoPage />} />
+          <Route path="conversations" element={<ConversationsPage />} />
           <Route path="learning" element={<LearningPlatformPage />} />
           <Route path="evolution" element={<KnowledgeEvolutionPage />} />
           <Route path="network" element={<EchoNetworkPage />} />

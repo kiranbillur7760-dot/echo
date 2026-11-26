@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.database.session import engine, Base, get_db
+from app.services.ai_provider_service import AIProviderService
 from app.services.seed_data import seed_database
 from app.routers import (
     auth,
@@ -22,6 +22,10 @@ from app.routers import (
     self_evolution,
     council,
     time_machine,
+    studio,
+    conversations,
+    settings_router,
+    voice_ws,
 )
 
 # Initialize database schema
@@ -30,8 +34,8 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="PROJECT ECHO — The Next-Generation Human Intelligence Platform Backend",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    description="PROJECT ECHO — Living Human Intelligence Platform Backend",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
 
 # Setup CORS
@@ -43,20 +47,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 def startup_event():
-    # Automatically seed the database with Dr. Alex Morgan synthetic scenario
     db = next(get_db())
     try:
         seed_database(db)
     finally:
         db.close()
 
+
 # Include routers
 app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(experts.router, prefix=settings.API_V1_STR)
 app.include_router(documents.router, prefix=settings.API_V1_STR)
 app.include_router(knowledge.router, prefix=settings.API_V1_STR)
+app.include_router(studio.router, prefix=settings.API_V1_STR)
+app.include_router(conversations.router, prefix=settings.API_V1_STR)
+app.include_router(settings_router.router, prefix=settings.API_V1_STR)
 app.include_router(decisions.router, prefix=settings.API_V1_STR)
 app.include_router(simulation.router, prefix=settings.API_V1_STR)
 app.include_router(ask_echo.router, prefix=settings.API_V1_STR)
@@ -70,22 +78,27 @@ app.include_router(self_reflection.router, prefix=settings.API_V1_STR)
 app.include_router(self_evolution.router, prefix=settings.API_V1_STR)
 app.include_router(council.router, prefix=settings.API_V1_STR)
 app.include_router(time_machine.router, prefix=settings.API_V1_STR)
+app.include_router(voice_ws.router)
 
 
 @app.get("/api/health")
 def health_check():
+    configured_providers = AIProviderService.get_configured_providers()
+    db_kind = "postgresql" if settings.DATABASE_URL.startswith("postgres") else "sqlite_ready"
     return {
         "status": "healthy",
         "platform": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "database": "sqlite_ready",
-        "ai_engine": "gemini_ready" if settings.GEMINI_API_KEY else "demonstration_mode"
+        "database": db_kind,
+        "ai_providers_configured": configured_providers,
+        "ai_engine": f"live_providers:{','.join(configured_providers)}" if configured_providers else "no_external_ai_keys_configured",
     }
+
 
 @app.get("/")
 def root():
     return {
-        "message": "Welcome to PROJECT ECHO — The Future of Human Knowledge",
+        "message": "Welcome to PROJECT ECHO — Living Human Intelligence",
         "docs": "/docs",
-        "status": "operational"
+        "status": "operational",
     }

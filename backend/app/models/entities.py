@@ -77,6 +77,9 @@ class Expert(Base):
     decisions = relationship("Decision", back_populates="expert", cascade="all, delete-orphan")
     lessons = relationship("Lesson", back_populates="expert", cascade="all, delete-orphan")
     case_studies = relationship("CaseStudy", back_populates="expert", cascade="all, delete-orphan")
+    consent = relationship("ExpertConsent", back_populates="expert", uselist=False, cascade="all, delete-orphan")
+    source_media = relationship("SourceMedia", back_populates="expert", cascade="all, delete-orphan")
+    knowledge_units = relationship("KnowledgeUnit", back_populates="expert", cascade="all, delete-orphan")
 
 class ExpertProfile(Base):
     __tablename__ = "expert_profiles"
@@ -452,5 +455,193 @@ class SelfEvolutionProposal(Base):
     review_notes = Column(Text, nullable=True)
     applied_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+# ==============================================================================
+# PROJECT ECHO LIVING HUMAN INTELLIGENCE EXTENSIONS
+# ==============================================================================
+
+class ExpertConsent(Base):
+    __tablename__ = "expert_consents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    expert_id = Column(Integer, ForeignKey("experts.id"), nullable=False, unique=True)
+    consent_knowledge = Column(Boolean, default=True)
+    consent_voice = Column(Boolean, default=True)
+    consent_likeness = Column(Boolean, default=True)
+    disclosure_acknowledged = Column(Boolean, default=True)
+    status = Column(String(50), default="active")  # active, suspended, revoked, deletion_requested
+    consent_text = Column(Text, default="Expert explicitly consents to preservation of contributed knowledge and AI-assisted digital representation with full review and revocation rights.")
+    signed_by = Column(String(255), nullable=True)
+    signed_at = Column(DateTime, default=datetime.utcnow)
+    revoked_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    expert = relationship("Expert", back_populates="consent")
+
+
+class SourceMedia(Base):
+    __tablename__ = "source_media"
+
+    id = Column(Integer, primary_key=True, index=True)
+    expert_id = Column(Integer, ForeignKey("experts.id"), nullable=False)
+    media_type = Column(String(50), nullable=False)  # pdf, docx, txt, audio, video, interview, demonstration, manual
+    title = Column(String(255), nullable=False)
+    filename = Column(String(255), nullable=True)
+    storage_path = Column(String(512), nullable=True)
+    mime_type = Column(String(120), nullable=True)
+    file_size = Column(Integer, default=0)
+    duration_seconds = Column(Float, nullable=True)
+    transcript = Column(Text, nullable=True)
+    metadata_json = Column(Text, default="{}")
+    status = Column(String(50), default="captured")  # captured, transcribed, extracted, failed, suspended
+    is_synthetic_demo = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    expert = relationship("Expert", back_populates="source_media")
+    knowledge_units = relationship("KnowledgeUnit", back_populates="source_media")
+
+
+class KnowledgeUnit(Base):
+    __tablename__ = "knowledge_units"
+
+    id = Column(Integer, primary_key=True, index=True)
+    expert_id = Column(Integer, ForeignKey("experts.id"), nullable=False, index=True)
+    source_media_id = Column(Integer, ForeignKey("source_media.id"), nullable=True)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)
+    title = Column(String(255), nullable=False, index=True)
+    description = Column(Text, nullable=False)
+    category = Column(String(100), default="experience", index=True)
+    # Categories: fact_concept, experience, reasoning_decision, practical_skill, method_procedure, problem_solution, failure_lesson, opinion_hypothesis, observation
+    topic = Column(String(150), default="General Engineering", index=True)
+    problem_or_situation = Column(Text, nullable=True)
+    context_and_experience = Column(Text, nullable=True)
+    reasoning_and_method = Column(Text, nullable=True)
+    decisions_and_alternatives = Column(Text, nullable=True)
+    failures_and_lessons = Column(Text, nullable=True)
+    source_reference = Column(String(255), nullable=True)
+    source_location_or_timestamp = Column(String(150), nullable=True)
+    # Verification states: ai_extracted, awaiting_expert_review, approved_by_expert, rejected, needs_correction
+    verification_status = Column(String(50), default="ai_extracted", index=True)
+    access_permissions = Column(String(50), default="public")  # public, organization, restricted, suspended
+    confidence_score = Column(Float, default=0.88)
+    expert_notes = Column(Text, nullable=True)
+    is_synthetic_demo = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    expert = relationship("Expert", back_populates="knowledge_units")
+    source_media = relationship("SourceMedia", back_populates="knowledge_units")
+    verification_history = relationship("VerificationHistory", back_populates="knowledge_unit", cascade="all, delete-orphan")
+
+
+class VerificationHistory(Base):
+    __tablename__ = "verification_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    knowledge_unit_id = Column(Integer, ForeignKey("knowledge_units.id"), nullable=False, index=True)
+    previous_status = Column(String(50), nullable=True)
+    new_status = Column(String(50), nullable=False)
+    reviewer_name = Column(String(255), nullable=False)
+    reviewer_role = Column(String(50), default="expert")
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    knowledge_unit = relationship("KnowledgeUnit", back_populates="verification_history")
+
+
+class ExpertRelationship(Base):
+    __tablename__ = "expert_relationships"
+
+    id = Column(Integer, primary_key=True, index=True)
+    expert_a_id = Column(Integer, ForeignKey("experts.id"), nullable=False, index=True)
+    expert_b_id = Column(Integer, ForeignKey("experts.id"), nullable=False, index=True)
+    relationship_type = Column(String(80), default="complementary_domain")  # complementary_domain, methodological_tension, shared_program, cross_validation
+    shared_topics = Column(Text, default="[]")  # JSON list
+    summary = Column(Text, nullable=False)
+    agreement_score = Column(Float, default=0.75)
+    is_synthetic_demo = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Conversation(Base):
+    __tablename__ = "conversations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(255), nullable=False)
+    mode = Column(String(50), default="hybrid_intelligence")  # complete_human_intelligence, hybrid_intelligence
+    expert_id = Column(Integer, ForeignKey("experts.id"), nullable=True)
+    expert_ids_json = Column(Text, default="[]")
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    is_voice = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at")
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=False, index=True)
+    sender = Column(String(30), nullable=False)  # user, echo
+    content = Column(Text, nullable=False)
+    mode = Column(String(50), default="hybrid_intelligence")
+    response_json = Column(Text, default="{}")
+    epistemic_breakdown_json = Column(Text, default="{}")
+    voice_used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    conversation = relationship("Conversation", back_populates="messages")
+    ai_runs = relationship("AIModelRun", back_populates="message", cascade="all, delete-orphan")
+    evidence_links = relationship("EvidenceLink", back_populates="message", cascade="all, delete-orphan")
+
+
+class AIModelRun(Base):
+    __tablename__ = "ai_model_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("messages.id"), nullable=True, index=True)
+    conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=True)
+    provider_id = Column(String(50), nullable=False)
+    provider_name = Column(String(100), nullable=False)
+    model = Column(String(100), nullable=False)
+    status = Column(String(30), nullable=False)  # success, failed, skipped
+    latency_ms = Column(Integer, default=0)
+    response_text = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    message = relationship("Message", back_populates="ai_runs")
+
+
+class EvidenceLink(Base):
+    __tablename__ = "evidence_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message_id = Column(Integer, ForeignKey("messages.id"), nullable=False, index=True)
+    knowledge_unit_id = Column(Integer, ForeignKey("knowledge_units.id"), nullable=True)
+    source_type = Column(String(60), nullable=False)
+    source_id = Column(Integer, default=0)
+    source_title = Column(String(255), nullable=False)
+    expert_name = Column(String(255), nullable=False)
+    location_or_timestamp = Column(String(150), nullable=True)
+    snippet = Column(Text, nullable=True)
+    reliability_score = Column(Float, default=0.9)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    message = relationship("Message", back_populates="evidence_links")
+
+
+class PlatformSetting(Base):
+    __tablename__ = "platform_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(100), unique=True, nullable=False, index=True)
+    value_json = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 
 

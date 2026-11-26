@@ -186,7 +186,71 @@ export interface ConversationTurn {
   expert_name?: string;
 }
 
-export type AskEchoMode = 'human_expert' | 'ai_intelligence' | 'hybrid_intelligence';
+export type AskEchoMode = 'complete_human_intelligence' | 'hybrid_intelligence';
+
+export interface ProviderRunInfo {
+  provider_id: string;
+  provider_name: string;
+  model: string;
+  success: boolean;
+  latency_ms: number;
+  error?: string | null;
+  content?: string | null;
+}
+
+export interface KnowledgeUnit {
+  id: number;
+  expert_id: number;
+  expert_name: string;
+  source_media_id?: number | null;
+  document_id?: number | null;
+  title: string;
+  description: string;
+  category: string;
+  topic: string;
+  problem_or_situation?: string | null;
+  context_and_experience?: string | null;
+  reasoning_and_method?: string | null;
+  decisions_and_alternatives?: string | null;
+  failures_and_lessons?: string | null;
+  source_reference?: string | null;
+  source_location_or_timestamp?: string | null;
+  verification_status: 'ai_extracted' | 'awaiting_expert_review' | 'approved_by_expert' | 'rejected' | 'needs_correction';
+  access_permissions: string;
+  confidence_score: number;
+  expert_notes?: string | null;
+  is_synthetic_demo: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface ExpertConsentInfo {
+  expert_id: number;
+  expert_name: string;
+  consent_knowledge: boolean;
+  consent_voice: boolean;
+  consent_likeness: boolean;
+  disclosure_acknowledged: boolean;
+  status: 'active' | 'suspended' | 'revoked' | 'deletion_requested';
+  consent_text?: string;
+  signed_by?: string | null;
+  signed_at?: string | null;
+  revoked_at?: string | null;
+  notes?: string | null;
+}
+
+export interface ConversationSummary {
+  id: number;
+  title: string;
+  mode: string;
+  expert_id?: number | null;
+  expert_name: string;
+  is_voice: boolean;
+  message_count: number;
+  last_preview: string;
+  created_at: string;
+  updated_at?: string;
+}
 
 export interface AIProviderInfo {
   id: string;
@@ -199,7 +263,9 @@ export interface AIProviderInfo {
 
 export interface AskEchoResult {
   query: string;
-  mode_used?: AskEchoMode;
+  mode_used?: AskEchoMode | string;
+  conversation_id?: number | null;
+  message_id?: number | null;
   structured_claims: EpistemicClaim[];
   narrative_answer: string;
   primary_expert?: {
@@ -211,6 +277,7 @@ export interface AskEchoResult {
     years_experience?: number;
     organization?: string;
     verification_status?: string;
+    is_synthetic_demo?: boolean;
   };
   is_insufficient_evidence?: boolean;
   missing_information_explanation?: string;
@@ -231,6 +298,7 @@ export interface AskEchoResult {
       title: string;
       domain: string;
       verification_status?: string;
+      is_synthetic_demo?: boolean;
     }>;
     documented_experience?: string[];
     recommendations?: string[];
@@ -241,14 +309,31 @@ export interface AskEchoResult {
     available: boolean;
     provider?: string;
     model?: string;
+    providers_succeeded?: Array<{
+      provider_id: string;
+      provider: string;
+      model: string;
+      latency_ms: number;
+      analysis: string;
+      recommendations: string[];
+      limitations: string[];
+    }>;
+    providers_failed?: Array<{
+      provider_id: string;
+      provider: string;
+      model: string;
+      error: string;
+    }>;
     analysis?: string | null;
     recommendations?: string[];
     limitations?: string[];
     error?: string;
     reason?: string;
   };
+  provider_runs?: ProviderRunInfo[];
   agreements?: string[];
   disagreements?: string[];
+  missing_information?: string[];
   hybrid_recommendation?: string | null;
   evidence_reliability?: {
     sources_count: number;
@@ -256,6 +341,13 @@ export interface AskEchoResult {
     confidence_limitations: string;
     missing_information: string[];
     hybrid_completeness: string;
+  };
+  epistemic_breakdown?: {
+    directly_documented_expert_knowledge: string[];
+    expert_approved_knowledge: string[];
+    ai_generated_interpretation: string[];
+    inference: string[];
+    unknown_or_unavailable: string[];
   };
   documented_facts: string[];
   expert_verified_insights: string[];

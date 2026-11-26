@@ -1,23 +1,36 @@
 import os
 import json
 import re
+import time
 import urllib.request
 import urllib.parse
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Any, List, Optional
 from app.core.config import settings
 
 
-def _is_real_key(key: Optional[str]) -> bool:
+def _is_real_key(key: Optional[str], provider_id: Optional[str] = None) -> bool:
     if not key:
         return False
     k = key.strip()
-    return bool(k) and "xxxx" not in k.lower() and not k.startswith("your_")
+    if not k or " " in k or len(k) < 20:
+        return False
+    lowered = k.lower()
+    if any(bad in lowered for bad in ("xxxx", "your_", "placeholder", "demo_key", "replace_me", "enter_")):
+        return False
+    if provider_id == "gemini" and not k.startswith("AIza"):
+        return False
+    if provider_id == "openai" and not k.startswith("sk-"):
+        return False
+    if provider_id == "anthropic" and not k.startswith("sk-ant-"):
+        return False
+    return True
 
 
 class AIProviderService:
     """
-    Modular AI Provider Architecture for PROJECT ECHO.
+    Extensible AI Provider Architecture for PROJECT ECHO.
     Supports Google Gemini, OpenAI GPT, Anthropic Claude, Perplexity, and Grok (xAI).
     Never fabricates AI responses when keys are missing or API calls fail.
     """
@@ -58,19 +71,10 @@ class AIProviderService:
             "default_model": "grok-2-latest",
             "env_var": "GROK_API_KEY",
         },
-        "web_search": {
-            "id": "web_search",
-            "name": "Live Web Knowledge",
-            "models": ["wikipedia-duckduckgo"],
-            "default_model": "wikipedia-duckduckgo",
-            "env_var": "",
-        },
     }
 
     @classmethod
     def get_provider_key(cls, provider_id: str) -> str:
-        if provider_id == "web_search":
-            return "no_key_required"
         meta = cls.PROVIDERS.get(provider_id)
         if not meta or not meta["env_var"]:
             return ""
@@ -84,8 +88,11 @@ class AIProviderService:
         if not meta or not meta["env_var"]:
             return {"success": False, "message": f"Provider '{provider_id}' does not use an API key."}
         cleaned = api_key.strip()
-        if not _is_real_key(cleaned):
-            return {"success": False, "message": "Please enter a valid API key."}
+        if not _is_real_key(cleaned, pid):
+            return {
+                "success": False,
+                "message": f"Invalid {meta['name']} API key format. Keys must not contain spaces or placeholder text.",
+            }
 
         env_var = meta["env_var"]
         setattr(settings, env_var, cleaned)
@@ -93,7 +100,7 @@ class AIProviderService:
 
         env_path = os.path.join(
             os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")),
-            ".env"
+            ".env",
         )
         lines: List[str] = []
         if os.path.exists(env_path):
@@ -126,76 +133,30 @@ class AIProviderService:
         result = []
         for pid, meta in cls.PROVIDERS.items():
             key = cls.get_provider_key(pid)
+            default_model = meta["default_model"]
+            if pid == "gemini" and settings.GEMINI_MODEL and " " not in settings.GEMINI_MODEL:
+                default_model = settings.GEMINI_MODEL
             result.append({
                 "id": pid,
                 "name": meta["name"],
                 "models": meta["models"],
-                "default_model": (
-                    settings.GEMINI_MODEL if pid == "gemini" and settings.GEMINI_MODEL else meta["default_model"]
-                ),
-                "configured": True if pid == "web_search" else _is_real_key(key),
+                "default_model": default_model,
+                "configured": _is_real_key(key, pid),
                 "env_var": meta["env_var"],
             })
         return result
 
-    @staticmethod
-    def _web_search_query(query: str) -> Optional[str]:
-        clean_q = re.sub(
-            r"^(what is|what are|who is|who was|how does|how do|how can we|explain|tell me about|build a|write a|compare|differences between)\s+",
-            "",
-            query.strip(),
-            flags=re.IGNORECASE,
-        ).rstrip("?!.").strip() or query.strip()
-
-        # 1. DuckDuckGo Instant Answer API
-        try:
-            ddg_url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(clean_q)}&format=json&no_html=1&skip_disambig=1"
-            req = urllib.request.Request(ddg_url, headers={"User-Agent": "ProjectECHO/1.0"})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                abstract = (data.get("AbstractText") or "").strip()
-                if abstract:
-                    src = data.get("AbstractSource") or "DuckDuckGo"
-                    return f"{abstract}\n\n(Source: {src} via Live Web Knowledge)"
-        except Exception:
-            pass
-
-        # 2. Wikipedia full-text search (handles natural-language open-ended questions)
-        try:
-            search_url = (
-                "https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=2&format=json&srsearch="
-                + urllib.parse.quote(clean_q)
-            )
-            req = urllib.request.Request(search_url, headers={"User-Agent": "ProjectECHO/1.0"})
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                search_res = json.loads(resp.read().decode("utf-8"))
-                hits = search_res.get("query", {}).get("search", [])
-                extracts = []
-                titles = []
-                for hit in hits[:2]:
-                    title = hit.get("title")
-                    if not title:
-                        continue
-                    sum_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{urllib.parse.quote(title.replace(' ', '_'))}"
-                    req2 = urllib.request.Request(sum_url, headers={"User-Agent": "ProjectECHO/1.0"})
-                    with urllib.request.urlopen(req2, timeout=5) as resp2:
-                        sum_data = json.loads(resp2.read().decode("utf-8"))
-                        extract = (sum_data.get("extract") or "").strip()
-                        if extract:
-                            extracts.append(f"**{title}**: {extract}")
-                            titles.append(title)
-                if extracts:
-                    return "\n\n".join(extracts) + f"\n\n(Source: Live Web Knowledge — Wikipedia: {', '.join(titles)})"
-        except Exception:
-            pass
-        return None
+    @classmethod
+    def get_configured_providers(cls) -> List[str]:
+        return [
+            pid for pid in ["gemini", "openai", "anthropic", "perplexity", "grok"]
+            if _is_real_key(cls.get_provider_key(pid), pid)
+        ]
 
     @classmethod
-    def get_default_configured_provider(cls) -> str:
-        for pid in ["gemini", "openai", "anthropic", "perplexity", "grok"]:
-            if _is_real_key(cls.get_provider_key(pid)):
-                return pid
-        return "web_search"
+    def get_default_configured_provider(cls) -> Optional[str]:
+        configured = cls.get_configured_providers()
+        return configured[0] if configured else None
 
     @staticmethod
     def _post_json(url: str, headers: Dict[str, str], payload: Dict[str, Any], timeout: int = 20) -> Dict[str, Any]:
@@ -217,18 +178,7 @@ class AIProviderService:
         model: Optional[str] = None,
         history: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
-        """
-        Calls the requested (or default configured) AI provider.
-        Returns:
-          {
-            "success": bool,
-            "provider_id": str,
-            "provider_name": str,
-            "model": str,
-            "content": Optional[str],
-            "error": Optional[str],
-          }
-        """
+        started = time.perf_counter()
         selected_provider = (provider or "").strip().lower()
         if not selected_provider or selected_provider == "auto":
             selected_provider = cls.get_default_configured_provider() or "gemini"
@@ -241,53 +191,25 @@ class AIProviderService:
                 "model": model or "",
                 "content": None,
                 "error": f"Unknown AI provider '{selected_provider}'.",
+                "latency_ms": 0,
             }
 
         meta = cls.PROVIDERS[selected_provider]
-        selected_model = model or (
-            settings.GEMINI_MODEL if selected_provider == "gemini" and settings.GEMINI_MODEL else meta["default_model"]
-        )
-
-        # Zero-key Live Web Knowledge option
-        if selected_provider == "web_search":
-            # Extract original question if prompt contains "User Question:"
-            q_match = re.search(r"User Question:\s*(.+)", prompt)
-            raw_q = q_match.group(1).strip() if q_match else prompt
-            web_text = cls._web_search_query(raw_q)
-            if web_text:
-                return {
-                    "success": True,
-                    "provider_id": "web_search",
-                    "provider_name": meta["name"],
-                    "model": selected_model,
-                    "content": web_text,
-                    "error": None,
-                }
-            return {
-                "success": False,
-                "provider_id": "web_search",
-                "provider_name": meta["name"],
-                "model": selected_model,
-                "content": None,
-                "error": "Live Web Search could not find an encyclopedia/instant answer for this conversational query (or internet access is unavailable).",
-            }
+        gem_model = settings.GEMINI_MODEL if (settings.GEMINI_MODEL and " " not in settings.GEMINI_MODEL) else meta["default_model"]
+        selected_model = model or (gem_model if selected_provider == "gemini" else meta["default_model"])
 
         api_key = cls.get_provider_key(selected_provider)
-
-        if not _is_real_key(api_key):
+        if not _is_real_key(api_key, selected_provider):
             return {
                 "success": False,
                 "provider_id": selected_provider,
                 "provider_name": meta["name"],
                 "model": selected_model,
                 "content": None,
-                "error": (
-                    f"{meta['name']} is not configured on the backend "
-                    f"({meta['env_var']} is missing in backend/.env)."
-                ),
+                "error": f"{meta['name']} is not configured with a valid API key ({meta['env_var']} missing or invalid in backend/.env).",
+                "latency_ms": int((time.perf_counter() - started) * 1000),
             }
 
-        # Build conversation-aware prompt text if history is supplied
         history_block = ""
         if history:
             turns = []
@@ -317,6 +239,7 @@ class AIProviderService:
                     "model": selected_model,
                     "content": text,
                     "error": None,
+                    "latency_ms": int((time.perf_counter() - started) * 1000),
                 }
 
             if selected_provider == "openai":
@@ -337,6 +260,7 @@ class AIProviderService:
                     "model": selected_model,
                     "content": text,
                     "error": None,
+                    "latency_ms": int((time.perf_counter() - started) * 1000),
                 }
 
             if selected_provider == "anthropic":
@@ -358,6 +282,7 @@ class AIProviderService:
                     "model": selected_model,
                     "content": text,
                     "error": None,
+                    "latency_ms": int((time.perf_counter() - started) * 1000),
                 }
 
             if selected_provider in ("perplexity", "grok"):
@@ -383,16 +308,23 @@ class AIProviderService:
                     "model": selected_model,
                     "content": text,
                     "error": None,
+                    "latency_ms": int((time.perf_counter() - started) * 1000),
                 }
 
         except urllib.error.HTTPError as http_err:
+            err_body = ""
+            try:
+                err_body = http_err.read().decode("utf-8")[:240]
+            except Exception:
+                pass
             return {
                 "success": False,
                 "provider_id": selected_provider,
                 "provider_name": meta["name"],
                 "model": selected_model,
                 "content": None,
-                "error": f"{meta['name']} API HTTP error ({http_err.code}): {http_err.reason}",
+                "error": f"{meta['name']} API HTTP error ({http_err.code}): {http_err.reason}. {err_body}".strip(),
+                "latency_ms": int((time.perf_counter() - started) * 1000),
             }
         except Exception as exc:
             return {
@@ -402,6 +334,7 @@ class AIProviderService:
                 "model": selected_model,
                 "content": None,
                 "error": f"{meta['name']} API call failed: {str(exc)}",
+                "latency_ms": int((time.perf_counter() - started) * 1000),
             }
 
         return {
@@ -411,4 +344,56 @@ class AIProviderService:
             "model": selected_model,
             "content": None,
             "error": "Provider execution did not return a response.",
+            "latency_ms": int((time.perf_counter() - started) * 1000),
         }
+
+    @classmethod
+    def generate_multi(
+        cls,
+        prompt: str,
+        system_prompt: str = "",
+        providers: Optional[List[str]] = None,
+        history: Optional[List[Dict[str, str]]] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Queries multiple AI providers in parallel.
+        If `providers` is omitted/auto, queries all configured providers (or falls back to
+        checking Gemini + OpenAI so missing/failing providers are reported honestly).
+        """
+        if providers:
+            targets = [p.strip().lower() for p in providers if p and p != "auto"]
+        else:
+            configured = cls.get_configured_providers()
+            targets = configured if configured else ["gemini", "openai"]
+
+        # Deduplicate while preserving order
+        seen = set()
+        ordered_targets = []
+        for t in targets:
+            if t not in seen:
+                seen.add(t)
+                ordered_targets.append(t)
+
+        results: Dict[str, Dict[str, Any]] = {}
+        with ThreadPoolExecutor(max_workers=max(1, len(ordered_targets))) as pool:
+            futs = {
+                pool.submit(cls.generate, prompt, system_prompt, pid, None, history): pid
+                for pid in ordered_targets
+            }
+            for fut in as_completed(futs):
+                pid = futs[fut]
+                try:
+                    results[pid] = fut.result()
+                except Exception as exc:
+                    meta = cls.PROVIDERS.get(pid, {"name": pid, "default_model": ""})
+                    results[pid] = {
+                        "success": False,
+                        "provider_id": pid,
+                        "provider_name": meta["name"],
+                        "model": meta.get("default_model", ""),
+                        "content": None,
+                        "error": str(exc),
+                        "latency_ms": 0,
+                    }
+
+        return [results[pid] for pid in ordered_targets]

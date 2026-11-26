@@ -365,16 +365,24 @@ class ConversationTurn(BaseModel):
 
 class AskEchoRequest(BaseModel):
     query: str
-    mode: Optional[str] = "hybrid_intelligence"  # human_expert | ai_intelligence | hybrid_intelligence
+    mode: Optional[str] = "hybrid_intelligence"  # complete_human_intelligence | hybrid_intelligence
     ai_provider: Optional[str] = "auto"          # auto | gemini | openai | anthropic | perplexity | grok
+    ai_providers: Optional[List[str]] = None     # optional list of providers to query in parallel
     ai_model: Optional[str] = None
     expert_id: Optional[int] = None
+    expert_ids: Optional[List[int]] = None
     focus_domain: Optional[str] = None
+    category: Optional[str] = None
+    verification_filter: Optional[str] = None   # approved_only | all_non_rejected
+    conversation_id: Optional[int] = None
+    is_voice: Optional[bool] = False
     conversation_history: Optional[List[ConversationTurn]] = []
 
 class AskEchoResponse(BaseModel):
     query: str
     mode_used: str = "hybrid_intelligence"
+    conversation_id: Optional[int] = None
+    message_id: Optional[int] = None
     structured_claims: List[EpistemicClaim]
     narrative_answer: str
     primary_expert: Optional[Dict[str, Any]] = None
@@ -382,15 +390,18 @@ class AskEchoResponse(BaseModel):
     missing_information_explanation: Optional[str] = None
     is_general_knowledge: bool = False
     external_ai_answer: Optional[str] = None
-    # Hybrid Intelligence A-G Structured Sections
+    # Hybrid Intelligence Structured Sections
     understanding: Optional[Dict[str, Any]] = None
     human_intelligence: Optional[Dict[str, Any]] = None
     ai_intelligence: Optional[Dict[str, Any]] = None
+    provider_runs: List[Dict[str, Any]] = []
     agreements: List[str] = []
     disagreements: List[str] = []
+    missing_information: List[str] = []
     hybrid_recommendation: Optional[str] = None
     evidence_reliability: Optional[Dict[str, Any]] = None
-    # Legacy / Epistemic lists
+    epistemic_breakdown: Optional[Dict[str, List[str]]] = None
+    # Epistemic lists
     documented_facts: List[str]
     expert_verified_insights: List[str]
     ai_generated_inferences: List[str]
