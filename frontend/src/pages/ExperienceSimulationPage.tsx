@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { SimulationResult } from '../types';
+import { FeatureHeader } from '../components/FeatureInfoModal';
 import {
   Compass,
   Sparkles,
@@ -73,7 +74,10 @@ export const ExperienceSimulationPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Feature Explanation & Demo Stage Header */}
+      <FeatureHeader featureKey="simulation" />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#00D9FF]/15">
         <div>

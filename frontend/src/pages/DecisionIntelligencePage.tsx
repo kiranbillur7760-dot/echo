@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { DecisionDNA, DecisionReplayResult, Alternative, OutcomeItem, EvidenceItem } from '../types';
+import { FeatureHeader } from '../components/FeatureInfoModal';
 import {
   Cpu,
   ShieldAlert,
@@ -219,6 +220,9 @@ export const DecisionIntelligencePage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Feature Explanation & Demo Stage Header */}
+      <FeatureHeader featureKey="decisions" />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#00D9FF]/15">
         <div>

@@ -14,6 +14,12 @@ import { KnowledgeEvolutionPage } from './pages/KnowledgeEvolutionPage';
 import { EchoNetworkPage } from './pages/EchoNetworkPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
+import { EchoMirrorPage } from './pages/EchoMirrorPage';
+import { SelfReflectionPage } from './pages/SelfReflectionPage';
+import { SelfEvolutionPage } from './pages/SelfEvolutionPage';
+import { ExistenceLaboratoryPage } from './pages/ExistenceLaboratoryPage';
+import { CouncilOfExpertsPage } from './pages/CouncilOfExpertsPage';
+import { DecisionTimeMachinePage } from './pages/DecisionTimeMachinePage';
 
 export const App: React.FC = () => {
   return (
@@ -25,6 +31,8 @@ export const App: React.FC = () => {
           <Route path="experts/:id" element={<ExpertDetailPage />} />
           <Route path="knowledge" element={<KnowledgePage />} />
           <Route path="decisions" element={<DecisionIntelligencePage />} />
+          <Route path="council" element={<CouncilOfExpertsPage />} />
+          <Route path="time-machine" element={<DecisionTimeMachinePage />} />
           <Route path="graph" element={<KnowledgeGraphPage />} />
           <Route path="simulation" element={<ExperienceSimulationPage />} />
           <Route path="ask-echo" element={<AskEchoPage />} />
@@ -33,6 +41,10 @@ export const App: React.FC = () => {
           <Route path="network" element={<EchoNetworkPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="mirror" element={<EchoMirrorPage />} />
+          <Route path="reflection" element={<SelfReflectionPage />} />
+          <Route path="self-evolution" element={<SelfEvolutionPage />} />
+          <Route path="existence" element={<ExistenceLaboratoryPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

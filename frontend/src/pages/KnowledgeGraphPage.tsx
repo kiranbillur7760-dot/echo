@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { KnowledgeGraphData } from '../types';
 import { InteractiveKnowledgeGraph } from '../components/InteractiveKnowledgeGraph';
+import { FeatureHeader } from '../components/FeatureInfoModal';
 
 export const KnowledgeGraphPage: React.FC = () => {
   const [data, setData] = useState<KnowledgeGraphData | null>(null);
@@ -23,6 +24,9 @@ export const KnowledgeGraphPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Feature Explanation & Demo Stage Header */}
+      <FeatureHeader featureKey="graph" />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#00D9FF]/15">
         <div>

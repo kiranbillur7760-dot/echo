@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HolographicCore } from '../components/HolographicCore';
+import { FeatureHeader } from '../components/FeatureInfoModal';
 import { api } from '../services/api';
 import { OverviewDashboard } from '../types';
 import {
@@ -37,9 +38,12 @@ export const OverviewPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500">
+    <div className="space-y-10 animate-in fade-in duration-500">
+      {/* Feature Explanation & Demo Stage Header */}
+      <FeatureHeader featureKey="overview" />
+
       {/* A. Hero Section */}
-      <section className="relative text-center pt-4 pb-6 overflow-hidden">
+      <section className="relative text-center pt-2 pb-6 overflow-hidden">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#00D9FF]/10 border border-[#00D9FF]/30 text-[#00D9FF] text-xs font-mono tracking-widest uppercase mb-4 shadow-glow-cyan">
           <span className="w-1.5 h-1.5 rounded-full bg-[#00D9FF] animate-ping" />
           HUMAN INTELLIGENCE PLATFORM
@@ -59,18 +63,25 @@ export const OverviewPage: React.FC = () => {
 
         <div className="flex flex-wrap items-center justify-center gap-4">
           <button
-            onClick={() => navigate('/decisions')}
-            className="px-6 py-3 rounded-xl btn-cyber-primary flex items-center gap-2 text-xs uppercase tracking-wider"
+            onClick={() => navigate('/council')}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white shadow-lg shadow-purple-900/30 flex items-center gap-2 text-xs uppercase tracking-wider font-bold transition-all cursor-pointer"
           >
-            ENTER THE SYSTEM
-            <ArrowRight className="w-4 h-4" />
+            <Sparkles className="w-4 h-4" />
+            SIGNATURE 1: COUNCIL OF EXPERTS
           </button>
           <button
-            onClick={() => navigate('/graph')}
-            className="px-6 py-3 rounded-xl btn-cyber-secondary flex items-center gap-2 text-xs uppercase tracking-wider font-semibold"
+            onClick={() => navigate('/time-machine')}
+            className="px-6 py-3 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg shadow-cyan-900/30 flex items-center gap-2 text-xs uppercase tracking-wider font-bold transition-all cursor-pointer"
           >
-            EXPLORE ECHO
-            <Layers className="w-4 h-4 text-[#00D9FF]" />
+            <Clock className="w-4 h-4" />
+            SIGNATURE 2: DECISION TIME MACHINE
+          </button>
+          <button
+            onClick={() => navigate('/experts')}
+            className="px-5 py-3 rounded-xl btn-cyber-secondary flex items-center gap-2 text-xs uppercase tracking-wider font-semibold"
+          >
+            EXPERTS & KNOWLEDGE
+            <ArrowRight className="w-4 h-4 text-[#00D9FF]" />
           </button>
         </div>
       </section>
@@ -296,6 +307,72 @@ export const OverviewPage: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Connected 7-Stage Hackathon Demonstration Workflow */}
+      <section className="mt-8 p-7 rounded-2xl glass-panel border border-[#00D9FF]/25 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full bg-[#00E6A0] animate-pulse" />
+              <span className="text-[10px] font-mono font-bold tracking-widest text-[#00E6A0] uppercase">
+                HACKATHON PRESENTATION ROADMAP
+              </span>
+            </div>
+            <h3 className="text-lg font-bold font-display text-white">
+              5-STAGE PRIMARY INTELLIGENCE DEMONSTRATION WORKFLOW
+            </h3>
+            <p className="text-xs text-[#9FB2CA] mt-0.5">
+              Follow this deliberate sequence to demonstrate the entire lifecycle of preserved human knowledge.
+            </p>
+          </div>
+
+          <button
+            onClick={() => navigate('/council')}
+            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-2 text-xs uppercase tracking-wider font-bold whitespace-nowrap self-start sm:self-auto shadow-md"
+          >
+            <span>Launch Council Deliberation</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {[
+            { step: 1, title: 'Overview', to: '/', desc: 'Mission telemetry & multi-expert radar', status: 'ACTIVE VIEW', color: '#00D9FF' },
+            { step: 2, title: 'Experts & Knowledge', to: '/experts', desc: '4 verified senior practitioners', status: 'READY', color: '#167BFF' },
+            { step: 3, title: 'Decision DNA', to: '/decisions', desc: '9-point causal reconstruction', status: 'READY', color: '#925CFF' },
+            { step: 4, title: 'Council of Experts', to: '/council', desc: 'Multi-expert grand challenge deliberation', status: 'SIGNATURE 1', color: '#D946EF' },
+            { step: 5, title: 'Decision Time Machine', to: '/time-machine', desc: 'Constraint stress test & branching', status: 'SIGNATURE 2', color: '#06B6D4' },
+          ].map((item) => (
+            <div
+              key={item.step}
+              onClick={() => navigate(item.to)}
+              className="p-4 rounded-xl bg-[#020713]/80 border border-white/10 hover:border-[#00D9FF]/40 cursor-pointer transition flex flex-col justify-between group"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="w-5 h-5 rounded-full flex items-center justify-center font-mono font-bold text-[10px]" style={{ color: item.color, background: `${item.color}20`, border: `1px solid ${item.color}40` }}>
+                    {item.step}
+                  </span>
+                  <span className="text-[9px] font-mono text-[#9FB2CA] uppercase">
+                    {item.status}
+                  </span>
+                </div>
+                <div className="text-xs font-bold text-white group-hover:text-[#00D9FF] transition-colors leading-tight mb-1">
+                  {item.title}
+                </div>
+                <p className="text-[10px] text-[#9FB2CA] leading-snug">
+                  {item.desc}
+                </p>
+              </div>
+
+              <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-[#00D9FF]">
+                <span>View Stage</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </div>

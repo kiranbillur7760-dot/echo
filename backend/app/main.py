@@ -20,6 +20,8 @@ from app.routers import (
     echo_mirror,
     self_reflection,
     self_evolution,
+    council,
+    time_machine,
 )
 
 # Initialize database schema
@@ -66,6 +68,8 @@ app.include_router(network.router, prefix=settings.API_V1_STR)
 app.include_router(echo_mirror.router, prefix=settings.API_V1_STR)
 app.include_router(self_reflection.router, prefix=settings.API_V1_STR)
 app.include_router(self_evolution.router, prefix=settings.API_V1_STR)
+app.include_router(council.router, prefix=settings.API_V1_STR)
+app.include_router(time_machine.router, prefix=settings.API_V1_STR)
 
 
 @app.get("/api/health")

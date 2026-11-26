@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { Expert } from '../types';
-import { Users, Plus, ShieldCheck, ChevronRight, Award, Briefcase, Search, Sparkles } from 'lucide-react';
+import { FeatureHeader } from '../components/FeatureInfoModal';
+import { Users, Plus, ShieldCheck, ChevronRight, Award, Briefcase, Search, Sparkles, BookOpen } from 'lucide-react';
 
 export const ExpertsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -68,6 +69,9 @@ export const ExpertsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Feature Explanation & Demo Stage Header */}
+      <FeatureHeader featureKey="experts" />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#00D9FF]/15">
         <div>
@@ -77,13 +81,22 @@ export const ExpertsPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="px-4 py-2 rounded-xl btn-cyber-primary flex items-center gap-2 text-xs uppercase tracking-wider"
-        >
-          <Plus className="w-4 h-4" />
-          Onboard Expert
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/knowledge')}
+            className="px-4 py-2 rounded-xl btn-cyber-secondary flex items-center gap-2 text-xs uppercase tracking-wider font-semibold"
+          >
+            <BookOpen className="w-4 h-4 text-[#00D9FF]" />
+            Ingest Document & Heuristics
+          </button>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 rounded-xl btn-cyber-primary flex items-center gap-2 text-xs uppercase tracking-wider"
+          >
+            <Plus className="w-4 h-4" />
+            Onboard Expert
+          </button>
+        </div>
       </div>
 
       {/* Filter / Search Bar */}

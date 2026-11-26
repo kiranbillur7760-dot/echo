@@ -14,8 +14,11 @@ def seed_database(db: Session):
     scenario for Dr. Alex Morgan, strictly labeled as SYNTHETIC DEMONSTRATION DATA.
     """
     # Check if already seeded
+    from app.services.seed_additional_experts import seed_additional_experts
+
     existing_expert = db.query(Expert).filter(Expert.name == "Dr. Alex Morgan").first()
     if existing_expert:
+        seed_additional_experts(db)
         return
 
     # 1. Base Users

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { KnowledgeRecord, DocumentItem } from '../types';
+import { FeatureHeader } from '../components/FeatureInfoModal';
 import {
   BookOpen,
   Upload,
@@ -246,6 +247,9 @@ export const KnowledgePage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Feature Explanation & Demo Stage Header */}
+      <FeatureHeader featureKey="knowledge" />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#00D9FF]/15">
         <div>

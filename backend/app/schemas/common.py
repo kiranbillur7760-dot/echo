@@ -343,28 +343,54 @@ class DecisionReplayResponse(BaseModel):
 
 # --- Ask ECHO Schemas ---
 class CitationSource(BaseModel):
-    source_type: str # 'document', 'decision', 'evidence', 'empirical_record'
+    source_type: str # 'document', 'decision', 'evidence', 'empirical_record', 'lesson'
     title: str
     reference_id: int
     expert_name: str
     snippet: str
     provenance_url: Optional[str] = None
+    exact_passage: Optional[str] = None
+    evidence_limitation: Optional[str] = None
 
 class EpistemicClaim(BaseModel):
-    claim_type: str # 'DOCUMENTED FACT', 'EXPERT-VERIFIED INFORMATION', 'AI-GENERATED INFERENCE', 'HYPOTHETICAL SIMULATION', 'INSUFFICIENT EVIDENCE'
+    claim_type: str # 'DOCUMENTED FACT', 'EXPERT-VERIFIED', 'AI ANALYSIS', 'HYPOTHETICAL', 'INSUFFICIENT EVIDENCE'
     statement: str
     grounding: str
     confidence: float
 
+class ConversationTurn(BaseModel):
+    query: str
+    answer: str
+    expert_name: Optional[str] = None
+
 class AskEchoRequest(BaseModel):
     query: str
+    mode: Optional[str] = "hybrid_intelligence"  # human_expert | ai_intelligence | hybrid_intelligence
+    ai_provider: Optional[str] = "auto"          # auto | gemini | openai | anthropic | perplexity | grok
+    ai_model: Optional[str] = None
     expert_id: Optional[int] = None
     focus_domain: Optional[str] = None
+    conversation_history: Optional[List[ConversationTurn]] = []
 
 class AskEchoResponse(BaseModel):
     query: str
+    mode_used: str = "hybrid_intelligence"
     structured_claims: List[EpistemicClaim]
     narrative_answer: str
+    primary_expert: Optional[Dict[str, Any]] = None
+    is_insufficient_evidence: bool = False
+    missing_information_explanation: Optional[str] = None
+    is_general_knowledge: bool = False
+    external_ai_answer: Optional[str] = None
+    # Hybrid Intelligence A-G Structured Sections
+    understanding: Optional[Dict[str, Any]] = None
+    human_intelligence: Optional[Dict[str, Any]] = None
+    ai_intelligence: Optional[Dict[str, Any]] = None
+    agreements: List[str] = []
+    disagreements: List[str] = []
+    hybrid_recommendation: Optional[str] = None
+    evidence_reliability: Optional[Dict[str, Any]] = None
+    # Legacy / Epistemic lists
     documented_facts: List[str]
     expert_verified_insights: List[str]
     ai_generated_inferences: List[str]
@@ -372,6 +398,7 @@ class AskEchoResponse(BaseModel):
     uncertainties_and_gaps: List[str]
     citations: List[CitationSource]
     overall_confidence: float
+    engine_mode: str = "database_grounded_retrieval"
 
 # --- Learning & Assessment Schemas ---
 class CaseStudyOut(BaseModel):
@@ -546,6 +573,7 @@ class EchoMirrorQueryRequest(BaseModel):
 class EchoMirrorQueryResponse(BaseModel):
     query: str
     answer: str
+    intent_classified: Optional[str] = None
     epistemic_classification: str # DOCUMENTED SYSTEM FACT, OPERATIONAL TELEMETRY, STRUCTURAL ARCHITECTURE
     grounded_facts: List[str]
     system_evidence: List[Dict[str, Any]]

@@ -12,8 +12,11 @@ import {
   Compass,
   FileText,
   Calendar,
-  CheckCircle2
+  CheckCircle2,
+  BookOpen,
+  Network
 } from 'lucide-react';
+import { FeatureHeader } from '../components/FeatureInfoModal';
 
 export const ExpertDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -53,7 +56,9 @@ export const ExpertDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <FeatureHeader featureKey="experts" />
+
       {/* Top Back Nav */}
       <button
         onClick={() => navigate('/experts')}
@@ -102,18 +107,25 @@ export const ExpertDetailPage: React.FC = () => {
         {/* Action Bar */}
         <div className="flex flex-wrap items-center gap-3 mt-6 pt-6 border-t border-white/5">
           <button
-            onClick={() => navigate('/simulation')}
-            className="px-5 py-2.5 rounded-xl btn-cyber-primary text-xs flex items-center gap-2 uppercase tracking-wider"
+            onClick={() => navigate('/knowledge')}
+            className="px-5 py-2.5 rounded-xl btn-cyber-primary text-xs flex items-center gap-2 uppercase tracking-wider font-bold"
           >
-            <Compass className="w-4 h-4" />
-            Simulate New Problem
+            <BookOpen className="w-4 h-4" />
+            Inspect Extracted Knowledge (Step 3)
           </button>
           <button
-            onClick={() => navigate('/ask-echo')}
+            onClick={() => navigate('/decisions')}
             className="px-5 py-2.5 rounded-xl btn-cyber-secondary text-xs flex items-center gap-2 uppercase tracking-wider font-semibold"
           >
-            <FileText className="w-4 h-4 text-[#00D9FF]" />
-            Ask Grounded Question
+            <Cpu className="w-4 h-4 text-[#00D9FF]" />
+            Reconstruct Decision DNA (Step 4)
+          </button>
+          <button
+            onClick={() => navigate('/graph')}
+            className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-[#9FB2CA] hover:text-white border border-white/10 text-xs flex items-center gap-2 uppercase tracking-wider font-semibold"
+          >
+            <Network className="w-4 h-4 text-[#00D9FF]" />
+            View in Graph (Step 5)
           </button>
         </div>
       </div>
